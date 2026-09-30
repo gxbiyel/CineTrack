@@ -5,6 +5,38 @@ const express = require("express");
 const router = express.Router();
 const OMDB_URL = "https://www.omdbapi.com/";
 
+// Common title words. OMDb has no "random movies" endpoint, so for the
+// featured list we search one random word from this list.
+const FEATURED_KEYWORDS = [
+    "love",
+    "night",
+    "war",
+    "life",
+    "dark",
+    "star",
+    "man",
+    "world",
+    "time",
+    "dream",
+    "king",
+    "city",
+    "blood",
+    "fire",
+    "last",
+    "road",
+    "dead",
+    "summer",
+    "home",
+    "secret",
+    "ghost",
+    "island",
+    "hero",
+    "wild",
+    "day",
+    "red",
+    "black",
+];
+
 function sendError(res, status, message) {
     res.status(status).json({ success: false, message });
 }
@@ -70,6 +102,56 @@ function handleError(res, err) {
     sendError(res, 500, "Something went wrong while contacting OMDb.");
 }
 
+// Converts OMDb's list into simple objects with only the fields the browser needs.
+// Used by both the search route and the featured route.
+function mapResults(omdbList) {
+    return omdbList.map((item) => ({
+        imdbID: item.imdbID,
+        title: item.Title,
+        year: item.Year,
+        type: item.Type,
+        poster:
+        typeof item.Poster === "string" && item.Poster.startsWith("https://")
+            ? item.Poster
+            : null,
+    }));
+}
+
+// FEATURED: GET /api/search/featured
+// Returns 10 movies for the home page, chosen by searching a random keyword.
+router.get("/featured", async (req, res) => {
+    try {
+        const pool = [...FEATURED_KEYWORDS];
+
+        // Try up to 3 different keywords in case one returns nothing.
+        for (let attempt = 0; attempt < 3 && pool.length > 0; attempt++) {
+            const randomIndex = Math.floor(Math.random() * pool.length);
+            const keyword = pool.splice(randomIndex, 1)[0]; // take it out so it is not reused
+
+            const data = await callOmdb({ s: keyword, type: "movie" });
+
+            if (
+                data.Response === "True" &&
+                Array.isArray(data.Search) &&
+                data.Search.length > 0
+            ) {
+                // OMDb returns up to 10 results per page, so this is our 10 movies.
+                return res.json({
+                success: true,
+                data: mapResults(data.Search).slice(0, 10),
+                });
+            }
+        }
+
+        throw httpError(
+            502,
+            "Unable to load featured movies right now. Please try again.",
+            );
+    } catch (err) {
+        handleError(res, err);
+    }
+});
+
 // SEARCH: GET /api/search?title=batman
 router.get("/", async (req, res) => {
     const title =
@@ -82,8 +164,8 @@ router.get("/", async (req, res) => {
     try {
         const data = await callOmdb({ s: title });
 
-        // No matches is not a server error, so reply with success and an empty list.
-        if (data.Response === "False") {
+    // No matches is not a server error, so reply with success and an empty list.
+    if (data.Response === "False") {
         if (/too many/i.test(data.Error || "")) {
             return res.json({
             success: true,
@@ -105,25 +187,13 @@ router.get("/", async (req, res) => {
         }
 
         if (!Array.isArray(data.Search)) {
-            throw httpError(
-                502,
-                "OMDb sent an unexpected response. Please try again.",
-            );
+        throw httpError(
+            502,
+            "OMDb sent an unexpected response. Please try again.",
+        );
         }
 
-        // Send the browser only the fields it needs, with simple names.
-        const results = data.Search.map((item) => ({
-        imdbID: item.imdbID,
-        title: item.Title,
-        year: item.Year,
-        type: item.Type,
-        poster:
-            typeof item.Poster === "string" && item.Poster.startsWith("https://")
-            ? item.Poster
-            : null,
-        }));
-
-        res.json({ success: true, data: results });
+        res.json({ success: true, data: mapResults(data.Search) });
     } catch (err) {
         handleError(res, err);
     }
@@ -137,17 +207,17 @@ router.get("/details/:imdbId", async (req, res) => {
     }
 
     try {
-        const data = await callOmdb({ i: req.params.imdbId });
-        if (data.Response === "False")
+    const data = await callOmdb({ i: req.params.imdbId });
+    if (data.Response === "False")
         return sendError(res, 404, "Movie details not found.");
 
-        // OMDb genres look like "Action, Crime, Drama"; keep the first one.
-        const firstGenre =
+    // OMDb genres look like "Action, Crime, Drama"; keep the first one.
+    const firstGenre =
         typeof data.Genre === "string" && data.Genre !== "N/A"
             ? data.Genre.split(",")[0].trim()
             : "";
 
-        res.json({
+    res.json({
         success: true,
         data: {
             title: data.Title,

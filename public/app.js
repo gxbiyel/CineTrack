@@ -209,30 +209,40 @@ filterText.addEventListener("input", renderMovies);
 filterStatus.addEventListener("change", renderMovies);
 
 // ---- ONLINE LOOKUP: search OMDb through our backend ----
-searchForm.addEventListener("submit", async (event) => {
+// Automatically shows 10 movies from OMDb when the page opens (no button needed).
+async function loadFeaturedMovies() {
+    searchStatus.textContent = 'Loading movies from OMDb...';
+    try {
+        const body = await apiRequest('/api/search/featured');
+        searchStatus.textContent =
+        `Showing ${body.data.length} movies from OMDb. Use the search box to find a specific title.`;
+        body.data.forEach((result) => searchResults.appendChild(createResultCard(result)));
+    } catch (err) {
+        // Not fatal: the rest of the page (CRUD) still works without OMDb.
+        searchStatus.textContent = err.message;
+    }
+}
+
+// Searching by title replaces the featured movies with the search results.
+searchForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const title = searchInput.value.trim();
-    searchResults.innerHTML = "";
+    searchResults.innerHTML = '';
 
     if (!title) {
-        searchStatus.textContent = "Please enter a movie title to search.";
+        searchStatus.textContent = 'Please enter a movie title to search.';
         return;
     }
 
     searchButton.disabled = true;
-    searchStatus.textContent = "Searching...";
+    searchStatus.textContent = 'Searching...';
     try {
-        const body = await apiRequest(
-        "/api/search?title=" + encodeURIComponent(title),
-        );
+        const body = await apiRequest('/api/search?title=' + encodeURIComponent(title));
         if (body.data.length === 0) {
-        searchStatus.textContent =
-            body.message || "No movies found for your search.";
+        searchStatus.textContent = body.message || 'No movies found for your search.';
         } else {
         searchStatus.textContent = `Showing ${body.data.length} result(s) from OMDb.`;
-        body.data.forEach((result) =>
-            searchResults.appendChild(createResultCard(result)),
-        );
+        body.data.forEach((result) => searchResults.appendChild(createResultCard(result)));
         }
     } catch (err) {
         searchStatus.textContent = err.message;
@@ -307,3 +317,4 @@ async function fillFormFromResult(result) {
 
 // Load the saved list as soon as the page opens.
 loadMovies();
+loadFeaturedMovies();
