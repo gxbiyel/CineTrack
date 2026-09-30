@@ -1,0 +1,16 @@
+{
+    "name": "CineTrack",
+    "version": "1.0.0",
+    "description": "A simple web application movie watchlist that uses the OMDBb API to CRUD movie data.",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js"
+    },
+    "engines": {
+        "node": ">=18"
+    },
+    "dependencies": {
+        "dotenv": "^16.4.5",
+        "express": "^4.19.2"
+    }
+}

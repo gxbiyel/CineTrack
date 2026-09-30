@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit Movie - Movie Watchlist</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <header class="site-header">
+        <h1>CineTrack</h1>
+        <nav><a href="/">Back to watchlist</a></nav>
+    </header>
+
+    <main>
+        <div id="message" class="message" hidden></div>
+
+        <section class="panel" id="edit-panel" hidden>
+            <h2>Edit Movie</h2>
+
+            <!-- Shows the values that were loaded from the server BEFORE editing -->
+            <p class="original-box" id="original-values"></p>
+
+            <form id="edit-form" novalidate>
+                <div class="form-grid">
+                    <label>Title
+                        <input type="text" id="title" maxlength="100" />
+                    </label>
+                    <label>Genre
+                        <input type="text" id="genre" maxlength="50" />
+                    </label>
+                    <label>Year
+                        <input type="number" id="year" min="1888" max="2100" />
+                    </label>
+                    <label>Status
+                        <select id="status">
+                            <option value="Planned">Planned</option>
+                            <option value="Watching">Watching</option>
+                            <option value="Watched">Watched</option>
+                        </select>
+                    </label>
+                    <label>Rating
+                        <select id="rating">
+                            <option value="0">Not rated</option>
+                            <option value="1">★☆☆☆☆ (1)</option>
+                            <option value="2">★★☆☆☆ (2)</option>
+                            <option value="3">★★★☆☆ (3)</option>
+                            <option value="4">★★★★☆ (4)</option>
+                            <option value="5">★★★★★ (5)</option>
+                        </select>
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a href="/" class="btn">Cancel</a>
+            </form>
+        </section>
+    </main>
+
+    <script src="edit.js"></script>
+</body>
+
+</html>

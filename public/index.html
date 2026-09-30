@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Movie Watchlist</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <header class="site-header">
+        <h1>CineTrack</h1>
+        <nav>
+            <a href="#add-section">Add Movie</a>
+            <a href="#search-section">Search OMDb</a>
+            <a href="#list-section">My Watchlist</a>
+        </nav>
+    </header>
+
+    <main>
+        <!-- SUCCESS/ERROR MESSAGES -->
+        <div id="message" class="message" hidden></div>
+
+        <!-- CREATE -->
+        <section id="add-section" class="panel">
+            <h2>Add Movie to Watchlist</h2>
+            <form id="movie-form" novalidate>
+                <div class="form-grid">
+                    <label>Title
+                        <input type="text" id="title" maxlength="100" placeholder="e.g. The Dark Knight" />
+                    </label>
+                    <label>Genre
+                        <input type="text" id="genre" maxlength="50" placeholder="e.g. Action" />
+                    </label>
+                    <label>Year
+                        <input type="number" id="year" min="1888" max="2026" placeholder="e.g. 2008" />
+                    </label>
+                    <label>Status
+                        <select id="status" required>
+                            <option value="" disabled selected>Select status</option>
+                            <option value="Planned">Planned</option>
+                            <option value="Watching">Watching</option>
+                            <option value="Watched">Watched</option>
+                        </select>
+                    </label>
+                    <label>Rating
+                        <select id="rating">
+                            <option value="0">Not rated</option>
+                            <option value="1">★☆☆☆☆ (1)</option>
+                            <option value="2">★★☆☆☆ (2)</option>
+                            <option value="3">★★★☆☆ (3)</option>
+                            <option value="4">★★★★☆ (4)</option>
+                            <option value="5">★★★★★ (5)</option>
+                        </select>
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+        </section>
+
+        <!-- SEARCH -->
+        <section id="search-section" class="panel">
+            <h2>Movie Search (OMDb)</h2>
+            <form id="search-form" class="search-row">
+                <input type="text" id="search-input" maxlength="100" placeholder="Search for a movie..." />
+                <button type="submit" id="search-button" class="btn btn-primary">Search</button>
+            </form>
+            <p id="search-status" class="hint"></p>
+            <div id="search-results" class="card-grid"></div>
+        </section>
+
+        <!-- READ -->
+        <section id="list-section" class="panel">
+            <div class="list-header">
+                <h2>My Watchlist <span id="movie-count" class="hint"></span></h2>
+                <div class="filters">
+                    <input type="text" id="filter-text" placeholder="Filter by title or genre..." />
+                    <select id="filter-status">
+                        <option value="All">All status</option>
+                        <option value="Planned">Planned</option>
+                        <option value="Watching">Watching</option>
+                        <option value="Watched">Watched</option>
+                    </select>
+                </div>
+            </div>
+            <p id="empty-state" class="hint" hidden></p>
+            <div id="movie-list" class="card-grid"></div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
