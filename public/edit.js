@@ -1,121 +1,93 @@
-// edit.js: logic for edit.html (load one movie, edit it, save with PUT).
-const messageBox = document.getElementById("message");
-const editPanel = document.getElementById("edit-panel");
-const editForm = document.getElementById("edit-form");
-const originalValues = document.getElementById("original-values");
-const titleInput = document.getElementById("title");
-const genreInput = document.getElementById("genre");
-const yearInput = document.getElementById("year");
-const statusSelect = document.getElementById("status");
-const ratingSelect = document.getElementById("rating");
+// edit.js: load one movie, edit it (including your review), save with PUT.
+const $ = (id) => document.getElementById(id);
+const editPanel = $("edit-panel");
+const editForm = $("edit-form");
+const originalValues = $("original-values");
+const titleInput = $("title");
+const genreInput = $("genre");
+const yearInput = $("year");
+const statusSelect = $("status");
+const ratingSelect = $("rating");
+const reviewInput = $("review");
 
-// The movie ID comes from the URL: edit.html?id=...
 const movieId = new URLSearchParams(window.location.search).get("id");
+let loaded = null; // the movie as saved, so poster and plot are kept when we save
 
-let messageTimer;
-function showMessage(text, type = "success") {
-    messageBox.textContent = text;
-    messageBox.className = "message " + type;
-    messageBox.hidden = false;
-
-    // Start fade in
-    requestAnimationFrame(() => {
-        messageBox.classList.add("show");
-    });
-
-    clearTimeout(messageTimer);
-    messageTimer = setTimeout(() => {
-        messageBox.classList.remove("show");
-
-        // Wait for fade-out animation before hiding
-        setTimeout(() => {
-            messageBox.hidden = true;
-        }, 300);
-    }, 5000);
-}
-
-async function apiRequest(url, options) {
-    let response;
-    try {
-        response = await fetch(url, options);
-    } catch {
-        throw new Error("Cannot reach the server. Is it running?");
-    }
-    let body;
-    try {
-        body = await response.json();
-    } catch {
-        throw new Error("The server sent an invalid response.");
-    }
-    if (!response.ok || !body.success) {
-        throw new Error(body.message || "Something went wrong.");
-    }
-    return body;
-}
-
-// Step 1: load the existing movie and pre-fill the form.
 async function loadMovie() {
-    if (!movieId) {
-        return showMessage(
-        "No movie selected. Go back and click Edit on a movie.",
-        "error",
-        );
-    }
-    try {
-        const body = await apiRequest("/api/movies/" + encodeURIComponent(movieId));
-        const movie = body.data;
+  if (!movieId) {
+    return showMessage(
+      "No movie selected. Go back and click Edit on a movie.",
+      "error",
+    );
+  }
+  try {
+    loaded = withExtras(
+      (await apiRequest("/api/movies/" + encodeURIComponent(movieId))).data,
+    );
+    const rated = (loaded.rating || 0) > 0;
+    const status = rated ? "Watched" : statusOf(loaded); // a rating means it was watched
 
-        titleInput.value = movie.title;
-        genreInput.value = movie.genre;
-        yearInput.value = movie.year;
-        statusSelect.value = movie.status || "Planned";
-        ratingSelect.value = String(movie.rating || 0);
+    titleInput.value = loaded.title;
+    genreInput.value = loaded.genre;
+    yearInput.value = loaded.year;
+    statusSelect.value = status;
+    ratingSelect.value = String(loaded.rating || 0);
+    reviewInput.value = loaded.review || "";
+    syncRating(statusSelect, ratingSelect);
+    if (rated && statusOf(loaded) !== "Watched")
+      showMessage(
+        "This movie had a rating, so its status is now Watched. Save to keep it.",
+      );
 
-        // Display the old values so it is clear what was loaded before editing.
-        originalValues.textContent = `Currently saved:
-        \n${movie.title}
-        \n${movie.genre} • ${movie.year}
-        \nStatus: ${movie.status || "Planned"} 
-        \nRating: ${movie.rating || 0}/5`;
-        editPanel.hidden = false;
-    } catch (err) {
-        showMessage(err.message, "error"); // e.g. "Movie not found."
-    }
+    originalValues.textContent = [
+      "Currently saved:",
+      loaded.title,
+      `${loaded.genre} • ${loaded.year}`,
+      `Status: ${STATUS_LABEL[statusOf(loaded)]}`,
+      `Rating: ${loaded.rating || 0}/5`,
+    ].join("\n");
+    editPanel.hidden = false;
+  } catch (err) {
+    showMessage(err.message, "error");
+  }
 }
 
-// Step 2: send the changes with a PUT request.
 editForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
+  event.preventDefault();
+  if (!loaded) return;
 
-    const movie = {
-        title: titleInput.value.trim(),
-        genre: genreInput.value.trim(),
-        year: Number(yearInput.value),
-        status: statusSelect.value,
-        rating: Number(ratingSelect.value),
-    };
+  const movie = {
+    title: titleInput.value.trim(),
+    genre: genreInput.value.trim(),
+    year: Number(yearInput.value),
+    status: statusSelect.value,
+    rating: statusSelect.value === "Watched" ? Number(ratingSelect.value) : 0,
+    review: reviewInput.value.trim(),
+    poster: loaded.poster || "",
+    plot: loaded.plot || "",
+    released: loaded.released || "",
+    director: loaded.director || "",
+    actors: loaded.actors || "",
+  };
+  const problem = checkMovie(movie);
+  if (problem) return showMessage(problem, "error");
 
-    if (!movie.title) return showMessage("Movie title is required.", "error");
-    if (!movie.genre) return showMessage("Genre is required.", "error");
-    if (
-        !Number.isInteger(movie.year) ||
-        movie.year < 1888 ||
-        movie.year > new Date().getFullYear() + 5
-    ) {
-        return showMessage("Please enter a valid year.", "error");
-    }
-
-    try {
-        await apiRequest("/api/movies/" + encodeURIComponent(movieId), {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(movie),
-        });
-        showMessage("Movie updated successfully. Returning to your watchlist...");
-        setTimeout(() => (window.location.href = "/"), 1200);
-    } catch (err) {
-        showMessage(err.message, "error");
-    }
+  try {
+    await apiRequest("/api/movies/" + encodeURIComponent(movieId), {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(movie),
+    });
+    saveExtras(movie);
+    showMessage("Movie updated. Returning to your library...");
+    setTimeout(() => (window.location.href = "/"), 1200);
+  } catch (err) {
+    showMessage(err.message, "error");
+  }
 });
+
+statusSelect.addEventListener("change", () =>
+  syncRating(statusSelect, ratingSelect),
+);
 
 loadMovie();

@@ -1,95 +1,217 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Movie Watchlist</title>
+    <title>CineTrack</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="style.css" />
-</head>
+  </head>
 
-<body>
+  <body>
     <header class="site-header">
-        <h1>CineTrack</h1>
-        <nav>
-            <a href="#add-section">Add Movie</a>
-            <a href="#search-section">Search OMDb</a>
-            <a href="#list-section">My Watchlist</a>
-        </nav>
+      <h1>CineTrack</h1>
+      <nav>
+        <a href="#add-section">Add movie</a>
+        <a href="#search-section">Discover</a>
+        <a href="#list-section">Movie library</a>
+      </nav>
     </header>
 
     <main>
-        <!-- SUCCESS/ERROR MESSAGES -->
-        <div id="message" class="message" hidden></div>
+      <div
+        id="message"
+        class="message"
+        role="status"
+        aria-live="polite"
+        hidden
+      ></div>
 
-        <!-- CREATE -->
-        <section id="add-section" class="panel">
-            <h2>Add Movie to Watchlist</h2>
-            <form id="movie-form" novalidate>
-                <div class="form-grid">
-                    <label>Title
-                        <input type="text" id="title" maxlength="100" placeholder="e.g. The Dark Knight" />
-                    </label>
-                    <label>Genre
-                        <input type="text" id="genre" maxlength="50" placeholder="e.g. Action" />
-                    </label>
-                    <label>Year
-                        <input type="number" id="year" min="1888" max="2026" placeholder="e.g. 2008" />
-                    </label>
-                    <label>Status
-                        <select id="status" required>
-                            <option value="" disabled selected>Select status</option>
-                            <option value="Planned">Planned</option>
-                            <option value="Watching">Watching</option>
-                            <option value="Watched">Watched</option>
-                        </select>
-                    </label>
-                    <label>Rating
-                        <select id="rating">
-                            <option value="0">Not rated</option>
-                            <option value="1">★☆☆☆☆ (1)</option>
-                            <option value="2">★★☆☆☆ (2)</option>
-                            <option value="3">★★★☆☆ (3)</option>
-                            <option value="4">★★★★☆ (4)</option>
-                            <option value="5">★★★★★ (5)</option>
-                        </select>
-                    </label>
-                </div>
-                <button type="submit" class="btn btn-primary">Submit</button>
-            </form>
-        </section>
+      <section id="add-section" class="panel">
+        <h2>Add a movie</h2>
+        <form id="movie-form" novalidate>
+          <input type="hidden" id="poster" />
+          <input type="hidden" id="plot" />
+          <input type="hidden" id="released" />
+          <input type="hidden" id="director" />
+          <input type="hidden" id="actors" />
+          <div class="form-grid">
+            <label
+              >Title
+              <input
+                type="text"
+                id="title"
+                maxlength="100"
+                placeholder="e.g. The Dark Knight"
+              />
+            </label>
+            <label
+              >Genre
+              <input
+                type="text"
+                id="genre"
+                maxlength="100"
+                placeholder="e.g. Action"
+              />
+            </label>
+            <label
+              >Year
+              <input
+                type="number"
+                id="year"
+                min="1888"
+                placeholder="e.g. 2008"
+              />
+            </label>
+            <label
+              >Status
+              <select id="status">
+                <option value="" disabled selected>Select status</option>
+                <option value="Planned">Watchlist</option>
+                <option value="Watching">Watching</option>
+                <option value="Watched">Watched</option>
+              </select>
+            </label>
+            <label
+              >Rating
+              <select id="rating">
+                <option value="0">Not rated</option>
+                <option value="1">★☆☆☆☆ (1)</option>
+                <option value="2">★★☆☆☆ (2)</option>
+                <option value="3">★★★☆☆ (3)</option>
+                <option value="4">★★★★☆ (4)</option>
+                <option value="5">★★★★★ (5)</option>
+              </select>
+            </label>
+          </div>
+          <label
+            >My review
+            <textarea
+              id="review"
+              rows="3"
+              maxlength="1000"
+              placeholder="What did you think? (optional)"
+            ></textarea>
+          </label>
+          <button type="submit" class="btn btn-primary">Add to library</button>
+        </form>
+      </section>
 
-        <!-- SEARCH -->
-        <section id="search-section" class="panel">
-            <h2>Movie Search (OMDb)</h2>
-            <form id="search-form" class="search-row">
-                <input type="text" id="search-input" maxlength="100" placeholder="Search for a movie..." />
-                <button type="submit" id="search-button" class="btn btn-primary">Search</button>
-            </form>
-            <p id="search-status" class="hint"></p>
-            <div id="search-results" class="card-grid"></div>
-        </section>
+      <section id="search-section" class="panel">
+        <h2>Discover movies</h2>
+        <form id="search-form" class="search-row">
+          <input
+            type="text"
+            id="search-input"
+            maxlength="100"
+            placeholder="Search OMDb for a movie..."
+          />
+          <button type="submit" id="search-button" class="btn btn-primary">
+            Search
+          </button>
+        </form>
+        <p id="search-status" class="hint" role="status" aria-live="polite"></p>
+        <div id="search-results" class="card-grid"></div>
+      </section>
 
-        <!-- READ -->
-        <section id="list-section" class="panel">
-            <div class="list-header">
-                <h2>My Watchlist <span id="movie-count" class="hint"></span></h2>
-                <div class="filters">
-                    <input type="text" id="filter-text" placeholder="Filter by title or genre..." />
-                    <select id="filter-status">
-                        <option value="All">All status</option>
-                        <option value="Planned">Planned</option>
-                        <option value="Watching">Watching</option>
-                        <option value="Watched">Watched</option>
-                    </select>
-                </div>
-            </div>
-            <p id="empty-state" class="hint" hidden></p>
-            <div id="movie-list" class="card-grid"></div>
-        </section>
+      <section id="list-section" class="panel">
+        <div class="list-header">
+          <h2>Movie library <span id="movie-count" class="hint"></span></h2>
+          <div class="filters">
+            <input
+              type="text"
+              id="filter-text"
+              placeholder="Filter by title or genre..."
+            />
+            <select id="filter-status">
+              <option value="All">All statuses</option>
+              <option value="Planned">Watchlist</option>
+              <option value="Watching">Watching</option>
+              <option value="Watched">Watched</option>
+            </select>
+          </div>
+        </div>
+        <p id="empty-state" class="hint" hidden></p>
+        <div id="movie-list" class="card-grid"></div>
+      </section>
     </main>
 
-    <script src="app.js"></script>
-</body>
+    <!-- DETAILS POPUP: shared by Movie library and Discover -->
+    <div id="modal" class="modal" hidden>
+      <div
+        class="modal-box"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      >
+        <button
+          type="button"
+          id="modal-close"
+          class="modal-close"
+          aria-label="Close"
+        >
+          ×
+        </button>
+        <div id="modal-poster" class="modal-poster"></div>
+        <div class="modal-info">
+          <h2 id="modal-title"></h2>
+          <div class="modal-tags" data-only="library">
+            <span id="modal-status" class="badge"></span>
+            <span id="modal-stars" class="stars"></span>
+          </div>
+          <dl id="modal-facts" class="facts"></dl>
+          <h3>Plot</h3>
+          <p id="modal-plot" class="plot"></p>
+          <h3>Main cast</h3>
+          <ul id="modal-cast" class="cast"></ul>
+          <section data-only="library">
+            <h3>My review</h3>
+            <p id="modal-review" class="review"></p>
+            <textarea
+              id="review-input"
+              rows="5"
+              maxlength="1000"
+              placeholder="Write your thoughts..."
+              hidden
+            ></textarea>
+            <div class="modal-actions">
+              <button type="button" id="review-edit" class="btn">
+                Write review
+              </button>
+              <button
+                type="button"
+                id="review-save"
+                class="btn btn-primary"
+                hidden
+              >
+                Save review
+              </button>
+              <button type="button" id="review-cancel" class="btn" hidden>
+                Cancel
+              </button>
+            </div>
+          </section>
+          <div class="modal-actions">
+            <button
+              type="button"
+              id="modal-add"
+              class="btn btn-primary"
+              data-only="discover"
+            >
+              Add to library
+            </button>
+            <a id="modal-edit" class="btn" data-only="library">Edit details</a>
+          </div>
+        </div>
+      </div>
+    </div>
 
+    <script src="common.js"></script>
+    <script src="app.js"></script>
+  </body>
 </html>
