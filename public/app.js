@@ -333,6 +333,7 @@ async function saveReview() {
       body: JSON.stringify(updated),
     });
     movie.review = review;
+    saveExtras(movie);
     showReview(false);
     renderMovies();
     showMessage("Review saved.");

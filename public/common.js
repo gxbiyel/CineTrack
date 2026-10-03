@@ -1,7 +1,7 @@
 // common.js: helpers shared by index.html and edit.html (load before the page script).
 // Saved value stays "Planned" so your backend validation keeps working; the label shown is "Watchlist".
 const STATUS_LABEL = {
-  Planned: "Watchlist",
+  Planned: "Planned",
   Watching: "Watching",
   Watched: "Watched",
 };
@@ -86,7 +86,7 @@ function syncRating(statusEl, ratingEl) {
 // ---- Safety net for poster/plot/director/release date ----
 // If the server does not store these fields, they are remembered in this browser instead.
 // Once your backend saves them, the server's values win automatically.
-const EXTRA_FIELDS = ["poster", "plot", "director", "released", "actors"];
+const EXTRA_FIELDS = ["poster", "plot", "director", "released", "actors", "review"];
 const extrasKey = (movie) =>
   `${String(movie.title).toLowerCase()}|${movie.year}`;
 function readExtras() {
@@ -99,12 +99,12 @@ function readExtras() {
 function saveExtras(movie) {
   const extras = {};
   EXTRA_FIELDS.forEach((f) => movie[f] && (extras[f] = movie[f]));
-  if (!Object.keys(extras).length) return;
   try {
-    localStorage.setItem(
-      "cinetrack.extras",
-      JSON.stringify({ ...readExtras(), [extrasKey(movie)]: extras }),
-    );
+    const all = readExtras();
+    if (Object.keys(extras).length)
+      all[extrasKey(movie)] = extras; // overwrite, don't merge
+    else delete all[extrasKey(movie)]; // nothing left, so clear the entry
+    localStorage.setItem("cinetrack.extras", JSON.stringify(all));
   } catch {
     /* storage full or blocked: ignore */
   }
