@@ -190,6 +190,13 @@ option {
   outline-offset: 2px;
 }
 
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  /* moves the button to the right edge */
+  margin-top: 1rem;
+}
+
 /* Toast */
 .message {
   position: fixed;
