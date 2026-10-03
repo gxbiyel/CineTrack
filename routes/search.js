@@ -200,30 +200,38 @@ router.get("/", async (req, res) => {
 });
 
 // DETAILS: GET /api/search/details/tt1234567
-// Used to fetch the genre when the user picks a search result.
+// Used when the user opens a search result or picks it for the library.
 router.get("/details/:imdbId", async (req, res) => {
     if (!/^tt\d{5,10}$/.test(req.params.imdbId)) {
         return sendError(res, 400, "Invalid movie identifier.");
     }
 
     try {
-    const data = await callOmdb({ i: req.params.imdbId });
-    if (data.Response === "False")
-        return sendError(res, 404, "Movie details not found.");
+        const data = await callOmdb({ i: req.params.imdbId, plot: "full" });
+        if (data.Response === "False")
+            return sendError(res, 404, "Movie details not found.");
 
-    // OMDb genres look like "Action, Crime, Drama"; keep the first one.
-    const firstGenre =
-        typeof data.Genre === "string" && data.Genre !== "N/A"
-            ? data.Genre.split(",")[0].trim()
-            : "";
+        // OMDb uses "N/A" for missing values; turn that into "".
+        const text = (value) =>
+            typeof value === "string" && value !== "N/A" ? value : "";
 
-    res.json({
-        success: true,
-        data: {
-            title: data.Title,
-            year: parseInt(data.Year, 10) || null,
-            genre: firstGenre,
-        },
+        // OMDb genres look like "Action, Crime, Drama"; keep the first one.
+        const firstGenre = text(data.Genre).split(",")[0].trim();
+
+        res.json({
+            success: true,
+            data: {
+                title: data.Title,
+                year: parseInt(data.Year, 10) || null,
+                genre: firstGenre,
+                released: text(data.Released),
+                director: text(data.Director),
+                plot: text(data.Plot),
+                actors: text(data.Actors),
+                poster: text(data.Poster).startsWith("https://")
+                    ? data.Poster
+                    : "",
+            },
         });
     } catch (err) {
         handleError(res, err);

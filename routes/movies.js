@@ -11,6 +11,9 @@ function sendError(res, status, message) {
     res.status(status).json({ success: false, message });
 }
 
+function optionalText(value, maxLength) {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
 // Validates and cleans the request body.
 // Returns { error } if something is wrong, or { movie } with clean values.
 function validateMovieInput(body) {
@@ -48,7 +51,21 @@ function validateMovieInput(body) {
     }
 
     // rating 0 means "not rated yet"
-    return { movie: { title, genre, year, status, rating } };
+    return {
+        movie: {
+            title,
+            genre,
+            year,
+            status,
+            rating,
+            review: optionalText(input.review, 1000),
+            poster: optionalText(input.poster, 500),
+            plot: optionalText(input.plot, 2000),
+            released: optionalText(input.released, 50),
+            director: optionalText(input.director, 200),
+            actors: optionalText(input.actors, 300),
+        },
+    };
 }
 
 // READ ALL: GET /api/movies

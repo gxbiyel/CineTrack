@@ -406,6 +406,31 @@ option {
     transform: scale(0.97);
   }
 }
+.modal-box {
+  scrollbar-width: thin;
+  /* Firefox */
+  scrollbar-color: #9ca3af transparent;
+  /* thumb, track */
+}
+
+.modal-box::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-box::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 10px 0;
+  /* keeps the track off the rounded corners */
+}
+
+.modal-box::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 3px;
+}
+
+.modal-box::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
 .modal-close {
   position: absolute;
   top: 0.6rem;
@@ -443,6 +468,51 @@ option {
   gap: 0.75rem;
   margin-top: 0.5rem;
 }
+
+.modal-info .plot,
+#modal-plot {
+  max-height: 7.5rem;
+  /* about 5 lines; change to taste */
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  /* keeps text off the scrollbar */
+  line-height: 1.5;
+}
+
+#modal-plot {
+  height: 7.5rem;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  line-height: 1.5;
+}
+
+#modal-plot {
+  scrollbar-width: thin;
+  /* Firefox */
+  scrollbar-color: #9ca3af transparent;
+  /* thumb color, track color */
+}
+
+#modal-plot::-webkit-scrollbar {
+  width: 6px;
+}
+
+#modal-plot::-webkit-scrollbar-track {
+  background: transparent;
+  /* no background */
+}
+
+#modal-plot::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  /* visible gray */
+  border-radius: 3px;
+}
+
+#modal-plot::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+  /* slightly darker on hover */
+}
+
 .plot {
   color: #d0d0d0;
   margin-top: 1rem;
