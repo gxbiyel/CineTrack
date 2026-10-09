@@ -141,10 +141,53 @@ function statusBadge(status) {
   );
 }
 
+// ---- Already in library? ----
+const movieKey = (title, year) =>
+  `${String(title).trim().toLowerCase()}|${parseInt(year, 10) || ""}`;
+const isInLibrary = (movie) =>
+  allMovies.some(
+    (m) => movieKey(m.title, m.year) === movieKey(movie.title, movie.year),
+  );
+
+function updateAddButton() {
+  const button = $("modal-add");
+  const added = !!currentResult && isInLibrary(currentResult);
+  button.disabled = added;
+  button.textContent = added ? "Added to Library" : "Add to library";
+  button.classList.toggle("btn-added", added);
+}
+
+// ---- Fade-in on scroll ----
+// rootMargin "-35%" means a card appears once it is about 35% of the way up the screen.
+// Change to -30% or -40% to taste.
+const revealed = new Set(); // cards that already faded in won't replay on re-render (filtering, saving a review)
+const revealObserver =
+  "IntersectionObserver" in window
+    ? new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add("is-visible");
+            revealed.add(entry.target.dataset.revealKey);
+            revealObserver.unobserve(entry.target);
+          });
+        },
+        { rootMargin: "0px 0px -35% 0px", threshold: 0 },
+      )
+    : null;
+
+function revealOnScroll(card, key) {
+  if (!revealObserver || revealed.has(key)) return;
+  card.classList.add("reveal");
+  card.dataset.revealKey = key;
+  revealObserver.observe(card);
+}
+
 // ---- READ ----
 async function loadMovies() {
   try {
     allMovies = (await apiRequest(MOVIES_URL)).data.map(withExtras);
+    if (currentResult) updateAddButton();
     renderMovies();
   } catch (err) {
     showMessage(err.message, "error");
@@ -202,6 +245,7 @@ function createMovieCard(movie) {
   makeClickable(card, "View details for " + movie.title, () =>
     showDetails(movie, "library"),
   );
+  revealOnScroll(card, "m:" + movie.id);
   return card;
 }
 
@@ -244,6 +288,7 @@ function showDetails(movie, mode) {
     .querySelectorAll("[data-only]")
     .forEach((el) => (el.hidden = el.dataset.only !== mode));
   renderDetails(movie);
+  if (mode === "discover") updateAddButton();
 
   if (mode === "library") {
     const status = statusOf(movie);
@@ -290,6 +335,7 @@ async function openDiscover(result) {
     if (token !== detailToken) return;
   }
   renderDetails(currentResult);
+  updateAddButton();
 }
 
 // editing = false: read the saved review. editing = true: show the textarea.
@@ -374,7 +420,7 @@ movieForm.addEventListener("submit", async (event) => {
     status,
     rating: status === "Watched" ? Number(ratingSelect.value) : 0, // only watched movies can be rated
     review: reviewField.value.trim(),
-    poster: posterInput.value,
+    poster: posterInput.value.trim(),
     plot: plotInput.value,
     released: releasedInput.value,
     director: directorInput.value,
@@ -424,11 +470,11 @@ filterStatus.addEventListener("change", renderMovies);
 let searchToken = 0;
 async function runSearch(url, loadingText, doneText) {
   const token = ++searchToken;
-  searchResults.innerHTML = "";
   searchStatus.textContent = loadingText;
   try {
     const body = await apiRequest(url);
     if (token !== searchToken) return;
+    searchResults.replaceChildren(); // clear only once new data arrives, so typing doesn't flicker
     if (body.data.length === 0) {
       searchStatus.textContent =
         body.message || "No movies found for your search.";
@@ -439,24 +485,49 @@ async function runSearch(url, loadingText, doneText) {
       searchResults.appendChild(createResultCard(result)),
     );
   } catch (err) {
-    if (token === searchToken) searchStatus.textContent = err.message;
+    if (token !== searchToken) return;
+    searchResults.replaceChildren();
+    searchStatus.textContent = err.message;
   }
 }
 
-searchForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
+function loadFeatured() {
+  return runSearch(
+    "/api/search/featured",
+    "Loading movies from OMDb...",
+    (n) => `Showing ${n} movies from OMDb. Search for a specific title above.`,
+  );
+}
+
+const SEARCH_DELAY = 400; // ms to wait after the last keystroke
+const MIN_CHARS = 3; // OMDb answers "Too many results" for 1-2 letters
+let searchTimer;
+
+function searchMovies() {
   const title = searchInput.value.trim();
-  if (!title) {
-    searchStatus.textContent = "Please enter a movie title to search.";
+  if (!title) return loadFeatured(); // cleared the box -> back to featured
+  if (title.length < MIN_CHARS) {
+    searchToken++; // cancel any request still in flight
+    searchStatus.textContent = `Type at least ${MIN_CHARS} characters to search.`;
     return;
   }
-  searchButton.disabled = true;
-  await runSearch(
+  return runSearch(
     "/api/search?title=" + encodeURIComponent(title),
     "Searching...",
     (n) => `Showing ${n} result(s) from OMDb.`,
   );
-  searchButton.disabled = false;
+}
+
+searchInput.addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(searchMovies, SEARCH_DELAY);
+});
+
+// Enter (or the button) still works and searches immediately
+searchForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  clearTimeout(searchTimer);
+  searchMovies();
 });
 
 function createResultCard(result) {
@@ -475,6 +546,7 @@ function createResultCard(result) {
   makeClickable(card, "View details for " + result.title, () =>
     openDiscover(result),
   );
+  revealOnScroll(card, "r:" + result.imdbID);
   return card;
 }
 
@@ -503,8 +575,4 @@ function useInForm(movie) {
 }
 
 loadMovies();
-runSearch(
-  "/api/search/featured",
-  "Loading movies from OMDb...",
-  (n) => `Showing ${n} movies from OMDb. Search for a specific title above.`,
-);
+loadFeatured();

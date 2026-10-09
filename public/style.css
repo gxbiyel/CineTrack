@@ -34,6 +34,14 @@ body.modal-open {
   overflow: hidden;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+.panel {
+  scroll-margin-top: 5rem;
+}
+
 h1,
 h2 {
   font-family: "Bebas Neue", Impact, "Arial Narrow", sans-serif;
@@ -568,6 +576,10 @@ option {
     transition: none !important;
     animation: none !important;
   }
+
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 /* Details popup facts + states */
@@ -626,4 +638,30 @@ select:disabled {
 .cast li.muted {
   list-style: none;
   margin-left: -1.2rem;
+}
+
+/* Cards fade in once they scroll into view */
+.card.reveal:not(.is-visible) {
+  opacity: 0;
+}
+
+.card.reveal.is-visible {
+  animation: card-in 0.5s ease-out;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+/* "Added to Library" button state */
+.btn.btn-added,
+.btn.btn-added:hover {
+  background: #1e6b3a;
+  border-color: #1e6b3a;
+  color: #d9ffe6;
+  opacity: 1;
+  cursor: default;
 }

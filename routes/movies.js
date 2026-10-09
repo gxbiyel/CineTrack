@@ -12,7 +12,15 @@ function sendError(res, status, message) {
 }
 
 function optionalText(value, maxLength) {
-  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+    return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+function isWebUrl(value) {
+    try {
+        const { protocol } = new URL(value);
+        return protocol === "https:" || protocol === "http:";
+    } catch {
+        return false;
+    }
 }
 // Validates and cleans the request body.
 // Returns { error } if something is wrong, or { movie } with clean values.
@@ -33,6 +41,10 @@ function validateMovieInput(body) {
         ? 0
         : Number(input.rating);
     const maxYear = new Date().getFullYear() + 5; // allow upcoming releases
+    const poster = optionalText(input.poster, 500);
+    // ...after the rating check:
+    if (poster && !isWebUrl(poster))
+        return { error: "Invalid poster URL." };
 
     if (!title) return { error: "Movie title is required." };
     if (title.length > 100)
@@ -64,6 +76,7 @@ function validateMovieInput(body) {
             released: optionalText(input.released, 50),
             director: optionalText(input.director, 200),
             actors: optionalText(input.actors, 300),
+            poster: optionalText(input.poster, 500)
         },
     };
 }

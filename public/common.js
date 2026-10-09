@@ -61,6 +61,8 @@ function checkMovie(movie) {
   if (!movie.status) return "Please select a movie status.";
   if (movie.rating > 0 && movie.status !== "Watched")
     return "Only movies marked Watched can be rated.";
+  if (movie.poster && !/^https?:\/\/\S+$/i.test(movie.poster))
+    return "Please enter a valid poster URL.";
   if (
     !Number.isInteger(year) ||
     year < 1888 ||

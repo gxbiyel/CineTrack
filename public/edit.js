@@ -9,6 +9,7 @@ const yearInput = $("year");
 const statusSelect = $("status");
 const ratingSelect = $("rating");
 const reviewInput = $("review");
+const posterInput = $("poster");   
 
 const movieId = new URLSearchParams(window.location.search).get("id");
 let loaded = null; // the movie as saved, so poster and plot are kept when we save
@@ -33,6 +34,7 @@ async function loadMovie() {
     statusSelect.value = status;
     ratingSelect.value = String(loaded.rating || 0);
     reviewInput.value = loaded.review || "";
+    posterInput.value = loaded.poster || "";  
     syncRating(statusSelect, ratingSelect);
     if (rated && statusOf(loaded) !== "Watched")
       showMessage(
@@ -63,7 +65,7 @@ editForm.addEventListener("submit", async (event) => {
     status: statusSelect.value,
     rating: statusSelect.value === "Watched" ? Number(ratingSelect.value) : 0,
     review: reviewInput.value.trim(),
-    poster: loaded.poster || "",
+    poster: posterInput.value.trim(),
     plot: loaded.plot || "",
     released: loaded.released || "",
     director: loaded.director || "",

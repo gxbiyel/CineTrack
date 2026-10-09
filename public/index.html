@@ -35,7 +35,6 @@
       <section id="add-section" class="panel">
         <h2>Add a movie</h2>
         <form id="movie-form" novalidate>
-          <input type="hidden" id="poster" />
           <input type="hidden" id="plot" />
           <input type="hidden" id="released" />
           <input type="hidden" id="director" />
@@ -95,8 +94,11 @@
               id="review"
               rows="3"
               maxlength="1000"
-              placeholder="What did you think? (optional)"
+              placeholder="What are your thoughts on this movie? (optional)"
             ></textarea>
+          </label>
+          <label>Poster link
+            <input type="url" id="poster" maxlength="500" placeholder="https://example.com/poster.jpg (optional)" />
           </label>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary">Add to library</button>
