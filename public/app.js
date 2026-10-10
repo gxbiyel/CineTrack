@@ -230,7 +230,8 @@ function createMovieCard(movie) {
   body.appendChild(
     makeElement("p", rating ? "stars" : "stars unrated", starsText(rating)),
   );
-  if (movie.review) body.appendChild(makeElement("p", "snippet", movie.review));
+  const review = reviewOf(movie);
+  if (review) body.appendChild(makeElement("p", "snippet", review));
 
   const actions = makeElement("div", "card-actions");
   const editLink = makeElement("a", "btn", "Edit");
@@ -340,13 +341,18 @@ async function openDiscover(result) {
 
 // editing = false: read the saved review. editing = true: show the textarea.
 function showReview(editing) {
-  const review = currentMovie.review || "";
+  const canReview = statusOf(currentMovie) === "Watched"; // only watched movies can be reviewed
+  if (!canReview) editing = false;
+  const review = reviewOf(currentMovie);
   const reviewText = $("modal-review");
-  reviewText.textContent = review || "You haven't reviewed this movie yet.";
+  reviewText.textContent = canReview
+    ? review || "You haven't reviewed this movie yet."
+    : "Available once watched";
   reviewText.classList.toggle("empty", !review);
   reviewText.hidden = editing;
   reviewInput.hidden = !editing;
   $("review-edit").hidden = editing;
+  $("review-edit").disabled = !canReview;
   $("review-edit").textContent = review ? "Edit review" : "Write review";
   $("review-save").hidden = !editing;
   $("review-cancel").hidden = !editing;
@@ -358,6 +364,8 @@ function showReview(editing) {
 
 async function saveReview() {
   const movie = currentMovie;
+  if (statusOf(movie) !== "Watched")
+    return showMessage("Only movies marked Watched can be reviewed.", "error");
   const review = reviewInput.value.trim();
   const updated = {
     title: movie.title,
@@ -405,10 +413,12 @@ $("modal-add").addEventListener("click", () => {
 });
 
 // ---- CREATE ----
-statusSelect.addEventListener("change", () =>
-  syncRating(statusSelect, ratingSelect),
-);
+statusSelect.addEventListener("change", () => {
+  syncRating(statusSelect, ratingSelect);
+  syncReview(statusSelect, reviewField);
+});
 syncRating(statusSelect, ratingSelect);
+syncReview(statusSelect, reviewField);
 
 movieForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -419,7 +429,7 @@ movieForm.addEventListener("submit", async (event) => {
     year: Number(yearInput.value),
     status,
     rating: status === "Watched" ? Number(ratingSelect.value) : 0, // only watched movies can be rated
-    review: reviewField.value.trim(),
+    review: status === "Watched" ? reviewField.value.trim() : "", // only watched movies can be reviewed
     poster: posterInput.value.trim(),
     plot: plotInput.value,
     released: releasedInput.value,
@@ -441,6 +451,7 @@ movieForm.addEventListener("submit", async (event) => {
       (input) => (input.value = ""),
     );
     syncRating(statusSelect, ratingSelect);
+    syncReview(statusSelect, reviewField);
     showMessage(`"${movie.title}" was added to your library.`);
     await loadMovies();
   } catch (err) {

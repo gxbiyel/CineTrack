@@ -36,6 +36,7 @@ async function loadMovie() {
     reviewInput.value = loaded.review || "";
     posterInput.value = loaded.poster || "";  
     syncRating(statusSelect, ratingSelect);
+    syncReview(statusSelect, reviewInput);
     if (rated && statusOf(loaded) !== "Watched")
       showMessage(
         "This movie had a rating, so its status is now Watched. Save to keep it.",
@@ -64,7 +65,7 @@ editForm.addEventListener("submit", async (event) => {
     year: Number(yearInput.value),
     status: statusSelect.value,
     rating: statusSelect.value === "Watched" ? Number(ratingSelect.value) : 0,
-    review: reviewInput.value.trim(),
+    review: statusSelect.value === "Watched" ? reviewInput.value.trim() : "",
     poster: posterInput.value.trim(),
     plot: loaded.plot || "",
     released: loaded.released || "",
@@ -88,8 +89,9 @@ editForm.addEventListener("submit", async (event) => {
   }
 });
 
-statusSelect.addEventListener("change", () =>
-  syncRating(statusSelect, ratingSelect),
-);
+statusSelect.addEventListener("change", () => {
+  syncRating(statusSelect, ratingSelect);
+  syncReview(statusSelect, reviewInput);
+});
 
 loadMovie();

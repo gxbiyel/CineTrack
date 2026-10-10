@@ -603,7 +603,8 @@ option {
   color: var(--muted);
   letter-spacing: 0;
 }
-select:disabled {
+select:disabled,
+textarea:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }

@@ -61,6 +61,8 @@ function checkMovie(movie) {
   if (!movie.status) return "Please select a movie status.";
   if (movie.rating > 0 && movie.status !== "Watched")
     return "Only movies marked Watched can be rated.";
+  if (movie.review && movie.status !== "Watched")
+    return "Only movies marked Watched can be reviewed.";
   if (movie.poster && !/^https?:\/\/\S+$/i.test(movie.poster))
     return "Please enter a valid poster URL.";
   if (
@@ -83,6 +85,22 @@ function syncRating(statusEl, ratingEl) {
   if (!canRate) ratingEl.value = "0";
   ratingEl.disabled = !canRate;
   ratingEl.options[0].text = canRate ? "Not rated" : "Available once watched";
+}
+
+// ---- Review rule: only "Watched" movies can have a review (same rule as rating) ----
+function reviewOf(movie) {
+  return statusOf(movie) === "Watched" ? movie.review || "" : "";
+}
+// Call on load and whenever the status changes.
+function syncReview(statusEl, reviewEl) {
+  const canReview = statusEl.value === "Watched";
+  if (reviewEl.dataset.placeholder === undefined)
+    reviewEl.dataset.placeholder = reviewEl.placeholder; // remember the original text
+  if (!canReview) reviewEl.value = "";
+  reviewEl.disabled = !canReview;
+  reviewEl.placeholder = canReview
+    ? reviewEl.dataset.placeholder
+    : "Available once watched";
 }
 
 // ---- Safety net for poster/plot/director/release date ----
