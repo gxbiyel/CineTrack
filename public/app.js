@@ -16,6 +16,9 @@ const reviewField = $("review");
 const posterInput = $("poster");
 const plotInput = $("plot");
 const releasedInput = $("released");
+const imdbInput = $("imdbID");
+const sourceNote = $("source-note");
+const clearButton = $("clear-form");
 const directorInput = $("director");
 const actorsInput = $("actors");
 const movieList = $("movie-list");
@@ -30,6 +33,7 @@ const searchStatus = $("search-status");
 const searchResults = $("search-results");
 const modal = $("modal");
 const reviewInput = $("review-input");
+setDateLimits(releasedInput);
 
 // ---- Helpers ----
 // OMDb uses "N/A" for missing values; treat that (and empty/undefined) as "no value".
@@ -60,40 +64,6 @@ function normalizeDetails(data = {}) {
 }
 const compact = (obj) =>
   Object.fromEntries(Object.entries(obj).filter(([, v]) => v));
-
-const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-// "15 Oct 2026" (OMDb) or "2026-10-15" -> "October 15, 2026". A bare year or unknown format is returned as-is.
-function formatDate(value) {
-  const text = clean(value).trim();
-  const omdb = /^(\d{1,2}) ([A-Za-z]{3}) (\d{4})$/.exec(text);
-  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(text);
-  let year, month, day;
-  if (omdb) {
-    [year, month, day] = [
-      +omdb[3],
-      MONTHS.findIndex(
-        (m) => m.slice(0, 3).toLowerCase() === omdb[2].toLowerCase(),
-      ),
-      +omdb[1],
-    ];
-  } else if (iso) {
-    [year, month, day] = [+iso[1], +iso[2] - 1, +iso[3]];
-  }
-  return MONTHS[month] ? `${MONTHS[month]} ${day}, ${year}` : text;
-}
 
 // 2:3 poster box. Shows a clean title placeholder when there is no image or it fails to load.
 function posterNode(url, title) {
@@ -149,11 +119,16 @@ const isInLibrary = (movie) =>
     (m) => movieKey(m.title, m.year) === movieKey(movie.title, movie.year),
   );
 
+let detailsLoading = false; // true while a Discover movie's details are being fetched
 function updateAddButton() {
   const button = $("modal-add");
   const added = !!currentResult && isInLibrary(currentResult);
-  button.disabled = added;
-  button.textContent = added ? "Added to Library" : "Add to library";
+  button.disabled = added || detailsLoading;
+  button.textContent = added
+    ? "Added to Library"
+    : detailsLoading
+      ? "Loading details..."
+      : "Add to library";
   button.classList.toggle("btn-added", added);
 }
 
@@ -225,7 +200,13 @@ function createMovieCard(movie) {
 
   const body = makeElement("div", "card-body");
   body.appendChild(makeElement("h3", "", movie.title));
-  body.appendChild(makeElement("p", "meta", `${movie.genre} • ${movie.year}`));
+  body.appendChild(
+    makeElement(
+      "p",
+      "meta",
+      [movie.genre, releaseLabel(movie, true)].filter(Boolean).join(" • "),
+    ),
+  );
   const rating = ratingOf(movie);
   body.appendChild(
     makeElement("p", rating ? "stars" : "stars unrated", starsText(rating)),
@@ -258,7 +239,7 @@ function renderDetails(movie) {
   const facts = $("modal-facts");
   facts.replaceChildren();
   [
-    ["Release date", formatDate(movie.released) || clean(movie.year)],
+    ["Release date", releaseLabel(movie)],
     ["Genre", clean(movie.genre)],
     ["Director", clean(movie.director)],
   ].forEach(([label, value]) => {
@@ -283,6 +264,7 @@ function renderDetails(movie) {
 // mode: "library" (status, rating, review, edit) or "discover" (add to library).
 function showDetails(movie, mode) {
   detailToken++;
+  detailsLoading = false;
   currentMovie = mode === "library" ? movie : null;
   currentResult = mode === "discover" ? movie : null;
   modal
@@ -308,6 +290,7 @@ function showDetails(movie, mode) {
 
 function closeModal() {
   detailToken++;
+  detailsLoading = false;
   modal.hidden = true;
   document.body.classList.remove("modal-open");
   currentMovie = currentResult = null;
@@ -322,6 +305,8 @@ async function openDiscover(result) {
     imdbID: result.imdbID,
   };
   showDetails(base, "discover");
+  detailsLoading = true; // the button stays disabled until director, plot and cast arrive
+  updateAddButton();
   const token = detailToken;
   $("modal-plot").textContent = "Loading details...";
   $("modal-plot").classList.add("muted");
@@ -331,10 +316,15 @@ async function openDiscover(result) {
     );
     if (token !== detailToken) return;
     console.debug("OMDb details from server for", result.imdbID, body.data); // shows which fields your route returns
-    currentResult = { ...base, ...compact(normalizeDetails(body.data)) };
+    currentResult = {
+      ...base,
+      ...compact(normalizeDetails(body.data)),
+      detailsLoaded: true, // OMDb answered, so this movie can be added as API-sourced
+    };
   } catch {
     if (token !== detailToken) return;
   }
+  detailsLoading = false;
   renderDetails(currentResult);
   updateAddButton();
 }
@@ -376,7 +366,7 @@ async function saveReview() {
     review,
     poster: movie.poster || "",
     plot: movie.plot || "",
-    released: movie.released || "",
+    released: toIsoDate(movie.released),
     director: movie.director || "",
     actors: movie.actors || "",
   };
@@ -420,23 +410,51 @@ statusSelect.addEventListener("change", () => {
 syncRating(statusSelect, ratingSelect);
 syncReview(statusSelect, reviewField);
 
+// Empties the Add form and unlocks it, ready for the next movie.
+function resetAddForm() {
+  lockMetadata(false);
+  movieForm.reset();
+  [
+    posterInput,
+    plotInput,
+    releasedInput,
+    yearInput,
+    directorInput,
+    actorsInput,
+    imdbInput,
+  ].forEach((input) => (input.value = ""));
+  sourceNote.hidden = true;
+  clearButton.hidden = true;
+  syncRating(statusSelect, ratingSelect);
+  syncReview(statusSelect, reviewField);
+}
+clearButton.addEventListener("click", () => {
+  resetAddForm();
+  titleInput.focus();
+});
+
 movieForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const status = statusSelect.value;
+  const released = releasedInput.value; // "YYYY-MM-DD", or "" when left empty
+  const imdbID = imdbInput.value; // set only when the form was filled from OMDb
   const movie = {
     title: titleInput.value.trim(),
     genre: genreInput.value.trim(),
-    year: Number(yearInput.value),
+    // the year follows the release date; with no date we keep the year OMDb gave us
+    year: released ? Number(released.slice(0, 4)) : Number(yearInput.value),
     status,
     rating: status === "Watched" ? Number(ratingSelect.value) : 0, // only watched movies can be rated
     review: status === "Watched" ? reviewField.value.trim() : "", // only watched movies can be reviewed
     poster: posterInput.value.trim(),
-    plot: plotInput.value,
-    released: releasedInput.value,
-    director: directorInput.value,
-    actors: actorsInput.value,
+    plot: plotInput.value.trim(),
+    released,
+    director: directorInput.value.trim(),
+    actors: normalizeCast(actorsInput.value),
   };
-  const problem = checkMovie(movie);
+  // With an imdbID the server re-fetches the details from OMDb and saves the movie as API-sourced.
+  if (imdbID) movie.imdbID = imdbID;
+  const problem = checkMovie({ ...movie, source: imdbID ? "omdb" : "manual" });
   if (problem) return showMessage(problem, "error");
 
   try {
@@ -446,12 +464,7 @@ movieForm.addEventListener("submit", async (event) => {
       body: JSON.stringify(movie),
     });
     saveExtras(movie);
-    movieForm.reset();
-    [posterInput, plotInput, releasedInput, directorInput, actorsInput].forEach(
-      (input) => (input.value = ""),
-    );
-    syncRating(statusSelect, ratingSelect);
-    syncReview(statusSelect, reviewField);
+    resetAddForm();
     showMessage(`"${movie.title}" was added to your library.`);
     await loadMovies();
   } catch (err) {
@@ -563,23 +576,36 @@ function createResultCard(result) {
 
 // Copies a Discover movie (poster, plot, director, release date included) into the Add form.
 function useInForm(movie) {
+  lockMetadata(false); // start unlocked, then lock again below if this came from OMDb
   titleInput.value = movie.title;
   yearInput.value = parseInt(movie.year, 10) || "";
   genreInput.value = movie.genre || "";
   posterInput.value = movie.poster || "";
   plotInput.value = movie.plot || "";
-  releasedInput.value = movie.released || "";
+  releasedInput.value = toIsoDate(movie.released);
   directorInput.value = movie.director || "";
   actorsInput.value = movie.actors || "";
 
+  // OMDb answered with the full details: the movie is API-sourced and its details are locked.
+  // If OMDb could not be reached, the form is just prefilled and stays editable (a manual movie).
+  const fromApi = !!(movie.imdbID && movie.detailsLoaded);
+  imdbInput.value = fromApi ? movie.imdbID : "";
+  lockMetadata(fromApi);
+  sourceNote.hidden = !fromApi;
+  clearButton.hidden = !fromApi;
+
   $("add-section").scrollIntoView({ behavior: "smooth" });
-  if (genreInput.value) {
+  if (fromApi) {
     showMessage(
       'Form filled from OMDb. Pick a status, then click "Add to library".',
     );
+  } else if (genreInput.value) {
+    showMessage(
+      'Form filled. Pick a status, then click "Add to library".',
+    );
   } else {
     showMessage(
-      "Title and year filled in. Enter a genre and pick a status to finish.",
+      "Title and release date filled in. Enter a genre and pick a status to finish.",
     );
     genreInput.focus();
   }

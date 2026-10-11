@@ -35,10 +35,12 @@
       <section id="add-section" class="panel">
         <h2>Add a movie</h2>
         <form id="movie-form" novalidate>
-          <input type="hidden" id="plot" />
-          <input type="hidden" id="released" />
-          <input type="hidden" id="director" />
-          <input type="hidden" id="actors" />
+          <input type="hidden" id="imdbID" />
+          <input type="hidden" id="year" />
+          <p id="source-note" class="hint source-note" hidden>
+            These details came from OMDb and can't be edited. Choose a status,
+            then add the movie. To enter a movie yourself, use "Clear form".
+          </p>
           <div class="form-grid">
             <label
               >Title
@@ -59,13 +61,8 @@
               />
             </label>
             <label
-              >Year
-              <input
-                type="number"
-                id="year"
-                min="1888"
-                placeholder="e.g. 2008"
-              />
+              >Release date
+              <input type="date" id="released" />
             </label>
             <label
               >Status
@@ -88,6 +85,35 @@
               </select>
             </label>
           </div>
+          <div class="form-grid">
+            <label
+              >Director
+              <input
+                type="text"
+                id="director"
+                maxlength="200"
+                placeholder="e.g. Christopher Nolan (optional)"
+              />
+            </label>
+            <label
+              >Main cast
+              <input
+                type="text"
+                id="actors"
+                maxlength="300"
+                placeholder="e.g. Christian Bale, Heath Ledger (optional)"
+              />
+            </label>
+          </div>
+          <label
+            >Plot
+            <textarea
+              id="plot"
+              rows="3"
+              maxlength="2000"
+              placeholder="Short summary of the story (optional)"
+            ></textarea>
+          </label>
           <label
             >My review
             <textarea
@@ -101,6 +127,9 @@
             <input type="url" id="poster" maxlength="500" placeholder="https://example.com/poster.jpg (optional)" />
           </label>
           <div class="form-actions">
+            <button type="button" id="clear-form" class="btn" hidden>
+              Clear form
+            </button>
             <button type="submit" class="btn btn-primary">Add to library</button>
           </div>
         </form>

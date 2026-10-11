@@ -1,9 +1,9 @@
 // routes/search.js: talks to the OMDb API (mounted at /api/search).
 // The browser calls THIS route; only the server ever sees the API key.
 const express = require("express");
+const { httpError, callOmdb, getMovieDetails } = require("../omdb");
 
 const router = express.Router();
-const OMDB_URL = "https://www.omdbapi.com/";
 
 // Common title words. OMDb has no "random movies" endpoint, so for the
 // featured list we search one random word from this list.
@@ -39,61 +39,6 @@ const FEATURED_KEYWORDS = [
 
 function sendError(res, status, message) {
     res.status(status).json({ success: false, message });
-}
-
-// Small helper to create an error that carries an HTTP status code.
-function httpError(status, message) {
-    const err = new Error(message);
-    err.status = status;
-    return err;
-}
-
-// Sends one request to OMDb and returns the parsed JSON.
-// Throws an httpError with a user-friendly message if anything goes wrong.
-async function callOmdb(params) {
-    const apiKey = process.env.OMDB_API_KEY;
-    if (!apiKey || apiKey === "YOUR_KEY_HERE") {
-        throw httpError(
-        500,
-        "Movie search is currently unavailable because the server API key is not configured.",
-        );
-    }
-
-    // URLSearchParams safely encodes the user's text (e.g. spaces, symbols).
-    const url = new URL(OMDB_URL);
-    url.searchParams.set("apikey", apiKey);
-    for (const [key, value] of Object.entries(params)) {
-        url.searchParams.set(key, value);
-    }
-
-    let response;
-    try {
-        response = await fetch(url, { signal: AbortSignal.timeout(8000) }); // 8 s timeout
-    } catch (err) {
-        console.error("OMDb request failed:", err.message); // do not log the URL (it has the key)
-        throw httpError(502, "Unable to contact OMDb right now. Please try again.");
-    }
-
-    let data;
-    try {
-        data = await response.json(); // fails if OMDb sent something that is not JSON
-    } catch {
-        throw httpError(502, "OMDb sent an unexpected response. Please try again.");
-    }
-
-    if (!data || typeof data !== "object" || typeof data.Response !== "string") {
-        throw httpError(502, "OMDb sent an unexpected response. Please try again.");
-    }
-
-    // OMDb reports a bad key as { Response: "False", Error: "Invalid API key!" }
-    if (data.Response === "False" && /api key/i.test(data.Error || "")) {
-        throw httpError(
-        500,
-        "Movie search is currently unavailable because the server API key is not valid.",
-        );
-    }
-
-    return data;
 }
 
 function handleError(res, err) {
@@ -207,32 +152,9 @@ router.get("/details/:imdbId", async (req, res) => {
     }
 
     try {
-        const data = await callOmdb({ i: req.params.imdbId, plot: "full" });
-        if (data.Response === "False")
-            return sendError(res, 404, "Movie details not found.");
-
-        // OMDb uses "N/A" for missing values; turn that into "".
-        const text = (value) =>
-            typeof value === "string" && value !== "N/A" ? value : "";
-
-        // OMDb genres look like "Action, Crime, Drama"; keep the first one.
-        const firstGenre = text(data.Genre).split(",")[0].trim();
-
-        res.json({
-            success: true,
-            data: {
-                title: data.Title,
-                year: parseInt(data.Year, 10) || null,
-                genre: firstGenre,
-                released: text(data.Released),
-                director: text(data.Director),
-                plot: text(data.Plot),
-                actors: text(data.Actors),
-                poster: text(data.Poster).startsWith("https://")
-                    ? data.Poster
-                    : "",
-            },
-        });
+        const details = await getMovieDetails(req.params.imdbId);
+        if (!details) return sendError(res, 404, "Movie details not found.");
+        res.json({ success: true, data: details });
     } catch (err) {
         handleError(res, err);
     }

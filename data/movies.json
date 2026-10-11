@@ -1,1 +1,33 @@
-[]
+[
+  {
+    "id": "ca35eea4-9cb0-4a10-8fab-7ba05782aba2",
+    "source": "omdb",
+    "imdbID": "tt0816711",
+    "title": "World War Z",
+    "genre": "Action",
+    "year": 2013,
+    "released": "2013-06-21",
+    "poster": "https://m.media-amazon.com/images/M/MV5BODg3ZTM2YWQtZDE5Ny00NGNiLTkzYjgtYWVlYjNkOTg5NDI1XkEyXkFqcGc@._V1_QL75_UX380_CR0,11,380,562_.jpg",
+    "plot": "Life for former United Nations investigator Gerry Lane and his family seems content. Suddenly, the world is plagued by a mysterious infection turning whole human populations into rampaging mindless zombies. After barely escaping the chaos, Lane is persuaded to go on a mission to investigate this disease. What follows is a perilous trek around the world where Lane must brave horrific dangers and long odds to find answers before human civilization falls.",
+    "director": "Marc Forster",
+    "actors": "Brad Pitt, Mireille Enos, Daniella Kertesz",
+    "status": "Planned",
+    "rating": 0,
+    "review": ""
+  },
+  {
+    "id": "37caf14b-3c9c-474b-b2a0-f5bdbf3761af",
+    "source": "manual",
+    "title": "Bading sa Garapon",
+    "genre": "Crime",
+    "year": 2011,
+    "released": "2011-09-29",
+    "poster": "https://www.facebook.com/photo/?fbid=4542897899325066&set=a.1379316265683261&__cft__[0]=AZgDkJz63mFJooDj9xNAo5nryYUFFakn5ATgDe5Dm-MgP6FhK5WlPEIWwVQcEYPxzx_RU0k6HKpkQMt_80tjGEc_dR0pWjvJdi-Hr8sezLGDMMcdoYDS--ablJm0WwgXr4yB-ShRM6_DmAqP_6qC8WytS-x8CTdraA4&__tn__=~H-R",
+    "plot": "Si Bading naadapa, nakapulot tumayo't lumipad.",
+    "director": "Den Mark",
+    "actors": "Chelsea, Aaron, Bea, Nigel",
+    "status": "Watched",
+    "rating": 4,
+    "review": "hahahhaha bakla"
+  }
+]

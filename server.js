@@ -4,6 +4,7 @@ require("dotenv").config(); // loads OMDB_API_KEY from .env into process.env
 const express = require("express");
 const path = require("path");
 const { initDb } = require("./db");
+const { backfillSources } = require("./legacy");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,6 +45,10 @@ initDb()
                 "Warning: OMDB_API_KEY is not set. Movie search will be unavailable.",
                 );
             }
+            // Older movies have no recorded source yet; work it out (runs in the background).
+            backfillSources().catch((err) =>
+                console.error("Could not check older movies:", err.message),
+            );
         });
     })
     .catch((err) => {
