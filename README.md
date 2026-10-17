@@ -1,4 +1,4 @@
-# 🎬 CineTrack
+#CineTrack
 
 **A Movie Watchlist Management System with OMDb API Integration**
 
